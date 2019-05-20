@@ -12,16 +12,29 @@ import org.springframework.web.servlet.ModelAndView;
 @ControllerAdvice
 public class CustomExceptionHandler {
 
+    String cleanRoutePath(String uri) {
+        if (uri.indexOf("/") >= 0)
+            return uri.replace("/", "");
+        return uri;
+    }
+
     @ExceptionHandler(value = { BindException.class })
-    public ModelAndView validationBindExceptionHandler(BindException ex, Model model, HttpServletRequest req) {
+    public ModelAndView validationBindExceptionHandler(BindException ex, Model model, HttpServletRequest request) {
         model.addAttribute("peticion", ex.getBindingResult().getTarget());
         model.addAttribute("errores", ex.getFieldErrors());
-        ModelAndView modelAndViewResponse = new ModelAndView("login", model.asMap(), HttpStatus.OK);
+        ModelAndView modelAndViewResponse = new ModelAndView(cleanRoutePath(request.getRequestURI()), model.asMap(),
+                HttpStatus.OK);
         return modelAndViewResponse;
     }
 
     @ExceptionHandler(value = { Exception.class })
-    public String unKnownException(Exception ex) {
-        return "Employee Not Found";
+    public ModelAndView unKnownException(Exception ex, HttpServletRequest request) {
+        ModelAndView modelAndViewResponse = new ModelAndView();
+        modelAndViewResponse.addObject("exMessage", ex.getMessage());
+        modelAndViewResponse.addObject("exStacktrace", ex.getStackTrace());
+        modelAndViewResponse.addObject("url", request.getRequestURL());
+        modelAndViewResponse.addObject("absolute", cleanRoutePath(request.getRequestURI()));
+        modelAndViewResponse.setViewName("error");
+        return modelAndViewResponse;
     }
 }
